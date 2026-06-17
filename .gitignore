@@ -1,0 +1,28 @@
+# Unreal Engine generated/derived
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+.vscode/
+*.xcodeproj/
+*.xcworkspace/
+.idea/
+
+# Build artifacts
+*.VC.db
+*.opensdf
+*.sdf
+*.sln
+*.suo
+
+# OS
+.DS_Store
+
+# Keep source, config, content, docs, and project descriptor tracked.
+!*.uproject
+
+# transient dev logs
+build.log
+tests.log
