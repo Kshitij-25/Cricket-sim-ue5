@@ -11,7 +11,7 @@ using namespace CricketPhysics;
 
 namespace
 {
-	TAutoConsoleVariable<int32> CVarAnimDebug(TEXT("cricket.Debug.Anim"), 1,
+	TAutoConsoleVariable<int32> CVarAnimDebug(TEXT("cricket.Debug.Anim"), 0,
 		TEXT("Animation state/notify debug visualization. 0=off, 1=on"));
 
 	const TCHAR* NotifyName(ECricketAnimNotify N)

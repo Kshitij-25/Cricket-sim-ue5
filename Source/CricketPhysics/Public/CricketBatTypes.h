@@ -81,6 +81,16 @@ struct CRICKETPHYSICS_API FCricketBatProfile
 
 	/** Surface friction between bat face and ball (drives spin transfer/deflection). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bat") double Friction = 0.35;
+
+	/**
+	 * Blade-curvature factor (0..1). The bat face is not a flat plane: toward the
+	 * edges and toe the surface curves away, so the *local* contact normal tilts
+	 * off-face proportional to how far the contact is from the spine/sweet line.
+	 * This is what makes an edge squirt sideways and bleed pace (an oblique hit),
+	 * rather than just softening a still-straight drive. 0 = perfectly flat face.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bat", meta = (ClampMin = "0.0", ClampMax = "1.5"))
+	double EdgeCurvature = 1.1;
 };
 
 /**

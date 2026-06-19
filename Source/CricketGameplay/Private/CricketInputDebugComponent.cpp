@@ -5,7 +5,7 @@
 
 namespace
 {
-	TAutoConsoleVariable<int32> CVarInputDebug(TEXT("cricket.Debug.Input"), 1,
+	TAutoConsoleVariable<int32> CVarInputDebug(TEXT("cricket.Debug.Input"), 0,
 		TEXT("Player control / intent debug visualization. 0=off, 1=on"));
 
 	template <typename TEnum>

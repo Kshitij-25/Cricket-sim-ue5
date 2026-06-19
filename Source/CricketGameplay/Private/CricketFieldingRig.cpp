@@ -380,6 +380,9 @@ void ACricketFieldingRig::PollInput()
 
 void ACricketFieldingRig::DrawFieldAndHelp() const
 {
+#if UE_BUILD_SHIPPING
+	return; // Developer harness field/help overlay — compiled out of Shipping builds.
+#else
 	UWorld* World = GetWorld();
 	if (!World) { return; }
 
@@ -415,4 +418,5 @@ void ACricketFieldingRig::DrawFieldAndHelp() const
 		GEngine->AddOnScreenDebugMessage(5102, 0.f, FColor::Yellow,
 			FString::Printf(TEXT("Throw at stumps... closest %.2f m"), ClosestToStumpsM));
 	}
+#endif
 }

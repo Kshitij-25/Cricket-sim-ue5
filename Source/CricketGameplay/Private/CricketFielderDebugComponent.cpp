@@ -9,7 +9,7 @@ using namespace CricketPhysics;
 
 namespace
 {
-	TAutoConsoleVariable<int32> CVarFieldingDebug(TEXT("cricket.Debug.Fielding"), 1,
+	TAutoConsoleVariable<int32> CVarFieldingDebug(TEXT("cricket.Debug.Fielding"), 0,
 		TEXT("Fielding decision/prediction debug visualization. 0=off, 1=on"));
 
 	FColor KindColor(ECricketInterceptKind Kind)

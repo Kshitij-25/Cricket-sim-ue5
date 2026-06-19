@@ -164,8 +164,10 @@ FCricketBatterDecision FCricketBatterBrain::Decide(
 	T.Add(TEXT("Attack"),   AttackScore);
 	T.Add(TEXT("Boundary"), BoundaryScore);
 
-	// Under pressure, lapses are more likely (a rush of blood).
-	const double MistakeScale = 1.0 + S.Pressure * 1.5;
+	// Under pressure, lapses are more likely (a rush of blood) — but only mildly, or a
+	// chasing side (which carries high pressure throughout) collapses far more often than
+	// real T20 sides do. (Calibrated from the validation batch's chase-success metric.)
+	const double MistakeScale = 1.0 + S.Pressure * 0.8;
 	const int32 Chosen = FCricketTacticalEvaluator::SelectOption(T, D, Rng, MistakeScale);
 
 	static const ECricketBatterAction Actions[] = {

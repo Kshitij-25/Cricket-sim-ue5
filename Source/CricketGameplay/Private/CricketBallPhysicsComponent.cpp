@@ -3,6 +3,7 @@
 #include "CricketPhysicsConstants.h"
 #include "CricketBatCollision.h"
 #include "CricketShotGenerator.h"
+#include "CricketPerfProfiler.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 
@@ -125,6 +126,9 @@ void UCricketBallPhysicsComponent::TickComponent(float DeltaTime, ELevelTick Tic
 	{
 		return;
 	}
+
+	// Profiled: the ball integrator + contact resolution — the physics-first hot path.
+	CRICKET_PERF_SCOPE(Physics);
 
 	const FVector PrevPosM = State.Position;
 	Integrator.Advance(State, DeltaTime);

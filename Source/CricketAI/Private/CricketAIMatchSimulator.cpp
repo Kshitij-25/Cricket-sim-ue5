@@ -60,7 +60,8 @@ FCricketAIMatchTelemetry FCricketAIMatchSimulator::Simulate(
 	const FCricketAITeam& TeamB,
 	const FCricketMatchRules& Rules,
 	int32 Seed,
-	bool bTeamABatsFirst)
+	bool bTeamABatsFirst,
+	const FCricketBalanceConfig& Balance)
 {
 	FCricketAIMatchTelemetry Tel;
 
@@ -147,8 +148,13 @@ FCricketAIMatchTelemetry FCricketAIMatchSimulator::Simulate(
 
 		const FString StrikerName = Engine->GetStrikerName();
 		const FString BowlerName  = Engine->GetBowlerName();
-		const FCricketAIPlayerProfile& Batter = BatSide.ProfileByName(StrikerName);
-		const FCricketAIPlayerProfile& Bowler = BowlSide.ProfileByName(BowlerName);
+
+		// Effective profiles: the balance config biases the AI's intent-to-score /
+		// attacking tendencies here (neutral bias => unchanged => identical decisions).
+		FCricketAIPlayerProfile Batter = BatSide.ProfileByName(StrikerName);
+		FCricketAIPlayerProfile Bowler = BowlSide.ProfileByName(BowlerName);
+		Batter.Batting.Aggression  = Balance.BiasedAggression(Batter.Batting.Aggression);
+		Bowler.Bowling.Aggression  = Balance.BiasedBowlerAggression(Bowler.Bowling.Aggression);
 
 		const FCricketAIDifficultyParams BowlD = FCricketAIDifficultyParams::Resolve(BowlSide.Strategy.Difficulty);
 		const FCricketAIDifficultyParams BatD  = FCricketAIDifficultyParams::Resolve(BatSide.Strategy.Difficulty);
@@ -176,19 +182,33 @@ FCricketAIMatchTelemetry FCricketAIMatchSimulator::Simulate(
 		const FCricketBatterDecision BatDec = FCricketBatterBrain::Decide(Sit, Batter, BallRead, BatSide.Strategy, BatD, Rng);
 
 		// Resolve the contest -> raw facts -> interpret -> apply the laws.
-		const FCricketBallResult Result = FCricketContestModel::Resolve(BowlDec, BatDec, Bowler, Batter, BallRead, Rng);
+		const FCricketBallResult Result = FCricketContestModel::Resolve(BowlDec, BatDec, Bowler, Batter, BallRead, Rng, Balance);
 		const FCricketDeliveryOutcome Outcome = FCricketOutcomeInterpreter::Interpret(Result);
 
 		// --- Telemetry (captured before applying) ---
+		const bool bLegal  = (Outcome.Legality == ECricketDeliveryLegality::Legal);
+		const bool bWicket = (Outcome.Dismissal != ECricketDismissal::NotOut);
+		const int32 BallRuns = Outcome.RunsOffBat + Outcome.RanExtraRuns + (bLegal ? 0 : 1);
+
 		TT.ActionCounts[FMath::Clamp((int32)BatDec.Action, 0, 4)]++;
 		TT.BowlLengthCounts[FMath::Clamp((int32)BowlDec.Intent.Length, 0, 6)]++;
 		if (Outcome.bBoundary && Outcome.RunsOffBat == 4) { TT.Fours++; }
 		if (Outcome.bBoundary && Outcome.RunsOffBat == 6) { TT.Sixes++; }
-		if (Outcome.Legality != ECricketDeliveryLegality::Legal) { TT.Extras++; }
-		else if (Outcome.RunsOffBat == 0 && Outcome.RanExtraRuns == 0 && Outcome.Dismissal == ECricketDismissal::NotOut) { TT.Dots++; }
-		if (Outcome.Dismissal != ECricketDismissal::NotOut) { TT.Dismissals[FMath::Clamp((int32)Outcome.Dismissal, 0, 5)]++; }
+		if (!bLegal) { TT.Extras++; }
+		else if (Outcome.RunsOffBat == 0 && Outcome.RanExtraRuns == 0 && !bWicket) { TT.Dots++; }
+		if (bWicket) { TT.Dismissals[FMath::Clamp((int32)Outcome.Dismissal, 0, 5)]++; }
 
-		const bool bWicket = (Outcome.Dismissal != ECricketDismissal::NotOut);
+		// Phase split — credit runs/wickets/legal-balls to powerplay / middle / death.
+		switch (Sit.Phase)
+		{
+		case ECricketMatchPhase::Powerplay:
+			TT.PowerplayRuns += BallRuns; TT.PowerplayWickets += bWicket ? 1 : 0; TT.PowerplayBalls += bLegal ? 1 : 0; break;
+		case ECricketMatchPhase::Death:
+			TT.DeathRuns += BallRuns; TT.DeathWickets += bWicket ? 1 : 0; TT.DeathBalls += bLegal ? 1 : 0; break;
+		default:
+			TT.MiddleRuns += BallRuns; TT.MiddleWickets += bWicket ? 1 : 0; TT.MiddleBalls += bLegal ? 1 : 0; break;
+		}
+
 		Engine->ApplyDelivery(Outcome);
 
 		Mem.Record(BowlDec.Intent.Length, BowlDec.Intent.Line);
@@ -210,6 +230,13 @@ FCricketAIMatchTelemetry FCricketAIMatchSimulator::Simulate(
 	}
 
 	Tel.bCompleted   = (Engine->GetMatchState() == ECricketMatchState::MatchComplete);
-	Tel.ResultSummary = Engine->GetResult().Summary;
+	const FCricketMatchResult Res = Engine->GetResult();
+	Tel.ResultSummary = Res.Summary;
+	Tel.bTie = Res.bTie;
+	// The chase succeeds when the side that batted second is the winner.
+	if (!Res.bTie && Tel.Innings.Num() == 2)
+	{
+		Tel.bChaseSucceeded = (Res.WinningTeam == Tel.Innings[1].BattingTeam);
+	}
 	return Tel;
 }

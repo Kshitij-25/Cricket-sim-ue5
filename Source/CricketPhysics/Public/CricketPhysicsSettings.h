@@ -68,7 +68,7 @@ public:
 	// ---- Pitch-system debug master toggles (cricket.Debug.Pitch.*) -------
 	/** Master switch for the pitch debug overlay (bounce angle/surface/turn/seam). */
 	UPROPERTY(config, EditAnywhere, BlueprintReadOnly, Category = "Debug|Pitch")
-	bool bEnablePitchDebug = true;
+	bool bEnablePitchDebug = false;
 
 	/** Draw incoming vs outgoing arrows at each bounce (the bounce angle). */
 	UPROPERTY(config, EditAnywhere, BlueprintReadOnly, Category = "Debug|Pitch")

@@ -33,7 +33,8 @@ public class CricketAI : ModuleRules
 			"Engine",             // UActorComponent, DrawDebug, FRandomStream
 			"CricketPhysics",     // SI vocabulary: line/length/movement, shot/footwork, fielding predictor
 			"CricketGameplay",    // the controllers it drives: bowling / batting / fielder components
-			"CricketSim"          // the Match Engine + scoring/outcome types (match awareness)
+			"CricketSim",         // the Match Engine + scoring/outcome types (match awareness)
+			"CricketPerfCore"     // CRICKET_PERF_SCOPE instrumentation in AI controller ticks
 		});
 	}
 }

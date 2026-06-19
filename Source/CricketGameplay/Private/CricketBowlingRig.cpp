@@ -215,6 +215,9 @@ void ACricketBowlingRig::CycleBowler(int32 Dir)
 
 void ACricketBowlingRig::DrawControlsHelp() const
 {
+#if UE_BUILD_SHIPPING
+	return; // Developer harness overlay — compiled out of Shipping builds.
+#else
 	if (!GEngine || !Bowling) { return; }
 
 	const FString BowlerName = Bowling->GetAction().BowlerName.ToString();
@@ -222,4 +225,5 @@ void ACricketBowlingRig::DrawControlsHelp() const
 		FString::Printf(TEXT("Bowler [Tab]: %s   (presets 1-%d)"), *BowlerName, Bowling->NumPresets()));
 	GEngine->AddOnScreenDebugMessage(4101, 0.f, FColor::Silver,
 		TEXT("Space=Bowl  Up/Dn=Length  L/R=Line  [ ]=Pace  Q/E=Swing  Z/C=Spin  M=Movement  - =Scuff  R=NewBall"));
+#endif
 }

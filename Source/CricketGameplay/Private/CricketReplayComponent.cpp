@@ -7,6 +7,7 @@
 #include "CricketPitchInteraction.h"
 #include "CricketBatTypes.h"
 #include "CricketPhysicsConstants.h"
+#include "CricketPerfProfiler.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
@@ -16,7 +17,7 @@ using namespace CricketPhysics;
 
 namespace
 {
-	TAutoConsoleVariable<int32> CVarReplayDebug(TEXT("cricket.Debug.Replay"), 1,
+	TAutoConsoleVariable<int32> CVarReplayDebug(TEXT("cricket.Debug.Replay"), 0,
 		TEXT("Replay physics-visualization overlays. 0=off, 1=on"));
 }
 
@@ -76,6 +77,9 @@ void UCricketReplayComponent::HandleBatImpact(FCricketBatImpactReport)
 
 void UCricketReplayComponent::CaptureFrame()
 {
+	// Profiled: per-frame replay recording cost (snapshot build + ring append).
+	CRICKET_PERF_SCOPE(Replay);
+
 	FCricketReplayFrame F;
 	F.Time = RecordClock;
 

@@ -92,16 +92,23 @@ double FCricketTacticalEvaluator::BattingAggressionTarget(const FCricketMatchSit
 	if (S.bChasing)
 	{
 		const double Gap = S.RequiredRunRate - S.CurrentRunRate;       // how far behind
-		// Ahead of the rate with wickets in hand -> can ease off; behind -> push.
-		Situational = FMath::Clamp(0.5 + Gap * 0.06, 0.15, 1.0);
+		// Chase from the SAME phase shape the first innings would use (Base), then modulate
+		// by how far ahead/behind the required rate the chase is. On-rate, the chaser bats
+		// like a first-innings side in this phase, so it tracks the target instead of sitting
+		// at a flat, over-conservative tempo and falling ~20 short. (Calibrated from the
+		// validation batch: a flat chase baseline gave only ~12% chase success.)
+		// Note: a STEEPER gap response was tried and made chasing WORSE — pushing harder
+		// when behind just loses more wickets (chasing here is wicket-limited, not rate-
+		// limited), so the response is deliberately gentle.
+		Situational = FMath::Clamp(Base + Gap * 0.06, 0.20, 1.0);
 		if (S.RequiredRunRate > 12.0) { Situational = FMath::Max(Situational, 0.9); }
 		if (S.RunsRequired <= 0)       { Situational = 0.15; }          // already won-ish
 	}
 	else
 	{
 		// First innings: lean on the projected total vs par sense baked into Pressure,
-		// but always accelerate late.
-		Situational = Base + (S.Phase == ECricketMatchPhase::Death ? 0.2 : 0.0);
+		// but accelerate at the death.
+		Situational = Base + (S.Phase == ECricketMatchPhase::Death ? 0.25 : 0.0);
 	}
 
 	// 3. Temper for wickets in hand — fewer wickets, more caution (saturating).

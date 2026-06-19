@@ -9,7 +9,7 @@ using namespace CricketPhysics;
 
 namespace
 {
-	TAutoConsoleVariable<int32> CVarBattingDebug(TEXT("cricket.Debug.Batting"), 1,
+	TAutoConsoleVariable<int32> CVarBattingDebug(TEXT("cricket.Debug.Batting"), 0,
 		TEXT("Batting motion debug visualization. 0=off, 1=on"));
 
 	FColor BattingRegionColor(ECricketContactRegion Region)

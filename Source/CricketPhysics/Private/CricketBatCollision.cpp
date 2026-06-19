@@ -110,15 +110,32 @@ bool FCricketBatCollision::Resolve(
 	const double M = FMath::Max(Report.EffectiveMassKg, KINDA_SMALL_NUMBER);
 	const double e = Report.RestitutionUsed;
 
-	const FVector N = Bat.FaceNormal;                 // outward, toward the ball
+	const FVector N = Bat.FaceNormal;                 // nominal face normal, toward the ball
+
+	// Curved blade: the local contact normal tilts off the flat face toward the
+	// edge/toe the further the contact sits from the spine/sweet line. A flat
+	// face (EdgeCurvature 0) leaves Neff == N, so middled drives are unaffected;
+	// an edge hit gets an oblique normal that both deflects the ball sideways and
+	// reduces the closing speed (pace bleed) — the physics the EdgeImpact case
+	// expects, and what a real outside edge does.
+	const double HalfWidthM = FMath::Max(Profile.BladeWidthM * 0.5, KINDA_SMALL_NUMBER);
+	const double UpReachM = FMath::Max(Profile.BladeLengthM - Profile.SweetSpotFromToeM, KINDA_SMALL_NUMBER);
+	const double DownReachM = FMath::Max(Profile.SweetSpotFromToeM, KINDA_SMALL_NUMBER);
+	const double AcrossSigned = FMath::Clamp(Report.AcrossFaceM / HalfWidthM, -1.0, 1.0);
+	const double AlongSigned = FMath::Clamp(
+		Report.AlongBladeM >= 0.0 ? Report.AlongBladeM / UpReachM : Report.AlongBladeM / DownReachM, -1.0, 1.0);
+	const FVector Neff = (N
+		+ Profile.EdgeCurvature * AcrossSigned * Bat.WidthAxis
+		+ Profile.EdgeCurvature * AlongSigned * Bat.LongAxis).GetSafeNormal(KINDA_SMALL_NUMBER, N);
+
 	const FVector Vbat = Bat.VelocityAt(ContactPointM);
 	const FVector Vb = BallIn.Velocity;
 
 	Report.IncomingSpeedMS = Vb.Size();
 
-	// Relative velocity of ball w.r.t. bat along the face normal.
+	// Relative velocity of ball w.r.t. bat along the (effective) contact normal.
 	const FVector U = Vb - Vbat;
-	const double Un = FVector::DotProduct(U, N);
+	const double Un = FVector::DotProduct(U, Neff);
 
 	// Resolve only a closing contact (ball moving into the face).
 	if (Un >= 0.0)
@@ -131,13 +148,13 @@ bool FCricketBatCollision::Resolve(
 	// 2a. Normal impulse with restitution against the bat's effective mass.
 	const double Mu = (m * M) / (m + M);     // reduced mass
 	const double Jn = -(1.0 + e) * Un * Mu;  // > 0
-	const FVector DvNormal = (Jn / m) * N;
+	const FVector DvNormal = (Jn / m) * Neff;
 
 	// 2b. Tangential friction + spin coupling (mirrors FCricketPitchInteraction).
-	const FVector RContact = -R * N;         // ball surface point touching the face
+	const FVector RContact = -R * Neff;      // ball surface point touching the face
 	const FVector BallSurfaceVel = Vb + FVector::CrossProduct(BallIn.AngularVelocity, RContact);
 	const FVector USurf = BallSurfaceVel - Vbat;
-	const FVector Ut = USurf - FVector::DotProduct(USurf, N) * N;
+	const FVector Ut = USurf - FVector::DotProduct(USurf, Neff) * Neff;
 	const double UtLen = Ut.Size();
 
 	FVector DvTangent = FVector::ZeroVector;

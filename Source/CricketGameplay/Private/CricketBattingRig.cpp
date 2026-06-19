@@ -175,7 +175,11 @@ void ACricketBattingRig::CycleFeeder(int32 Dir)
 
 void ACricketBattingRig::DrawControlsHelp() const
 {
+#if UE_BUILD_SHIPPING
+	return; // Developer harness overlay — compiled out of Shipping builds.
+#else
 	if (!GEngine) { return; }
 	GEngine->AddOnScreenDebugMessage(4200, 0.f, FColor::Silver,
 		TEXT("Space=Play  1-4=Shot  Up/Dn=Foot  N=Neutral  L/R/Mouse=Aim  Q/E=Power  F=Feed  [ ]=Length  Tab=Bowler  R=NewBall"));
+#endif
 }

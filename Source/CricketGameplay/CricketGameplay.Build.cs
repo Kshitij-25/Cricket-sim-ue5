@@ -15,7 +15,8 @@ public class CricketGameplay : ModuleRules
 			"CoreUObject",
 			"Engine",
 			"PhysicsCore",
-			"CricketPhysics"
+			"CricketPhysics",
+			"CricketPerfCore"   // CRICKET_PERF_SCOPE instrumentation in hot ticks
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

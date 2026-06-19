@@ -12,13 +12,13 @@ using namespace CricketPhysics;
 
 namespace
 {
-	TAutoConsoleVariable<int32> CVarBowlDebug(TEXT("cricket.Bowl.Debug.Enable"), 1,
+	TAutoConsoleVariable<int32> CVarBowlDebug(TEXT("cricket.Bowl.Debug.Enable"), 0,
 		TEXT("Master bowling debug overlay. 0=off, 1=on"));
-	TAutoConsoleVariable<int32> CVarBowlMap(TEXT("cricket.Bowl.Debug.PitchMap"), 1,
+	TAutoConsoleVariable<int32> CVarBowlMap(TEXT("cricket.Bowl.Debug.PitchMap"), 0,
 		TEXT("Draw the pitch map (length zones + landing marks + stumps). 0=off, 1=on"));
-	TAutoConsoleVariable<int32> CVarBowlSwing(TEXT("cricket.Bowl.Debug.Swing"), 1,
+	TAutoConsoleVariable<int32> CVarBowlSwing(TEXT("cricket.Bowl.Debug.Swing"), 0,
 		TEXT("Draw aim line + swing prediction (chord vs curved path). 0=off, 1=on"));
-	TAutoConsoleVariable<int32> CVarBowlReadout(TEXT("cricket.Bowl.Debug.Readout"), 1,
+	TAutoConsoleVariable<int32> CVarBowlReadout(TEXT("cricket.Bowl.Debug.Readout"), 0,
 		TEXT("On-screen delivery parameter readout. 0=off, 1=on"));
 
 	/** Pitch-map colour keyed to length-from-the-striker (m). */

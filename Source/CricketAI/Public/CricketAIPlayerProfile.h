@@ -151,9 +151,14 @@ struct CRICKETAI_API FCricketTeamStrategy
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Strategy")
 	ECricketAIDifficulty Difficulty = ECricketAIDifficulty::Hard;
 
-	/** Intended posture in the powerplay (first 6). */
+	/**
+	 * Intended posture in the powerplay (first 6). Consolidate, not all-out: with the
+	 * field up the powerplay already scores freely, and going harder than this just
+	 * threw early wickets and left the tail to bat the death — which inverted the innings
+	 * shape (powerplay faster than the death). Tuned from the validation batch's phase split.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Strategy")
-	ECricketInningsApproach PowerplayApproach = ECricketInningsApproach::Accelerate;
+	ECricketInningsApproach PowerplayApproach = ECricketInningsApproach::Consolidate;
 
 	/** Intended posture through the middle overs. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Strategy")

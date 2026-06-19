@@ -3,6 +3,7 @@
 #include "CricketBattingComponent.h"
 #include "CricketFielderComponent.h"
 #include "CricketPhysicsConstants.h"
+#include "CricketPerfProfiler.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 
@@ -83,6 +84,10 @@ void UCricketCharacterAnimComponent::TickComponent(float DeltaTime, ELevelTick T
 	FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	// Profiled: animation state machines + character pose update.
+	CRICKET_PERF_SCOPE(Animation);
+
 	const double Dt = FMath::Max((double)DeltaTime, 1e-5);
 
 	// 1. Locomotion (derived from how the pawn is actually moving).

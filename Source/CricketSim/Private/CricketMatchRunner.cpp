@@ -1,6 +1,7 @@
 #include "CricketMatchRunner.h"
 #include "CricketMatchEngine.h"
 #include "CricketOutcomeInterpreter.h"
+#include "CricketDiagnosticsSubsystem.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/Engine.h"
 #include "InputCoreTypes.h"
@@ -58,6 +59,29 @@ void ACricketMatchRunner::SetupMatch()
 	DeliveryCounter = 0;
 	BowlerRotation = 0;
 	BallTimer = 0.f;
+	bResultReported = false;
+
+	// Telemetry: record match start (sets the crash breadcrumb context).
+	if (UCricketDiagnosticsSubsystem* Diag = UCricketDiagnosticsSubsystem::Get(this))
+	{
+		Diag->RecordMatchStart(India.TeamName, Australia.TeamName, Rules.OversPerInnings);
+	}
+}
+
+void ACricketMatchRunner::ReportResultIfComplete()
+{
+	if (bResultReported || !Engine || Engine->GetMatchState() != ECricketMatchState::MatchComplete)
+	{
+		return;
+	}
+	bResultReported = true;
+
+	if (UCricketDiagnosticsSubsystem* Diag = UCricketDiagnosticsSubsystem::Get(this))
+	{
+		const FCricketInningsState& I0 = Engine->GetInnings(0).Totals;
+		const FCricketInningsState& I1 = Engine->GetInnings(1).Totals;
+		Diag->RecordMatchResult(Engine->GetResult(), I0.Runs, I0.Wickets, I1.Runs, I1.Wickets);
+	}
 }
 
 void ACricketMatchRunner::EnsureBowler()
@@ -148,6 +172,7 @@ void ACricketMatchRunner::Tick(float DeltaSeconds)
 			StepBall();
 		}
 	}
+	ReportResultIfComplete();
 	DrawHUD();
 }
 
@@ -165,6 +190,9 @@ void ACricketMatchRunner::PollInput()
 
 void ACricketMatchRunner::DrawHUD() const
 {
+#if UE_BUILD_SHIPPING
+	return; // Placeholder on-screen scoreboard for the dev runner — the shipping HUD is CricketUI. Compiled out of Shipping.
+#else
 	if (!GEngine || !Engine) { return; }
 	auto Line = [&](int32 Key, const FColor& C, const FString& T) { GEngine->AddOnScreenDebugMessage(Key, 0.f, C, T); };
 
@@ -221,4 +249,5 @@ void ACricketMatchRunner::DrawHUD() const
 	{
 		Line(6030, FColor::Cyan, FString::Printf(TEXT("Innings break — Target %d. Press Space to start the chase."), Engine->GetTarget()));
 	}
+#endif
 }

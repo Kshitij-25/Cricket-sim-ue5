@@ -3,6 +3,7 @@
 #include "CricketBallPhysicsComponent.h"
 #include "CricketFieldingPredictor.h"
 #include "CricketPhysicsConstants.h"
+#include "CricketPerfProfiler.h"
 #include "GameFramework/Actor.h"
 
 using namespace CricketPhysics;
@@ -208,6 +209,9 @@ void UCricketFielderComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 	FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	// Profiled: fielding intercept/catch forecast (ball trajectory prediction).
+	CRICKET_PERF_SCOPE(Prediction);
 
 	const double Dt = FMath::Max((double)DeltaTime, 1e-5);
 	StateTime += Dt;

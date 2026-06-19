@@ -14,7 +14,7 @@ using namespace CricketPhysics;
 
 namespace
 {
-	TAutoConsoleVariable<int32> CVarStadiumDebug(TEXT("cricket.Debug.Stadium"), 1,
+	TAutoConsoleVariable<int32> CVarStadiumDebug(TEXT("cricket.Debug.Stadium"), 0,
 		TEXT("Stadium environment debug visualization. 0=off, 1=on"));
 
 	FColor ResultColor(ECricketBoundaryResult R)

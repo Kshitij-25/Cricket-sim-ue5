@@ -1,6 +1,7 @@
 #include "CricketBatterAIController.h"
 #include "CricketBattingComponent.h"
 #include "CricketBallPhysicsComponent.h"
+#include "CricketPerfProfiler.h"
 
 UCricketBatterAIController::UCricketBatterAIController()
 {
@@ -103,6 +104,9 @@ void UCricketBatterAIController::OnNewDelivery(UCricketBallPhysicsComponent* BP)
 void UCricketBatterAIController::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	// Profiled: batter brain read/decision each frame.
+	CRICKET_PERF_SCOPE(AI);
 
 	UCricketBattingComponent* Bat = Batting.Get();
 	if (!Bat) { return; }

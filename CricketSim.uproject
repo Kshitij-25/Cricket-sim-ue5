@@ -5,6 +5,11 @@
 	"Description": "Physics-first cricket simulation. The ball is the protagonist.",
 	"Modules": [
 		{
+			"Name": "CricketPerfCore",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault"
+		},
+		{
 			"Name": "CricketPhysics",
 			"Type": "Runtime",
 			"LoadingPhase": "PreDefault"
@@ -31,6 +36,16 @@
 		},
 		{
 			"Name": "CricketAudio",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "CricketPerformance",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "CricketPresentation",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		},

@@ -1,5 +1,6 @@
 #include "CricketFieldingAICoordinator.h"
 #include "CricketFielderComponent.h"
+#include "CricketPerfProfiler.h"
 
 UCricketFieldingAICoordinator::UCricketFieldingAICoordinator()
 {
@@ -20,6 +21,10 @@ void UCricketFieldingAICoordinator::AddFielder(UCricketFielderComponent* InField
 void UCricketFieldingAICoordinator::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	// Profiled: fielding AI coordination (captain/fielding brain dispatch).
+	CRICKET_PERF_SCOPE(AI);
+
 	Coordinate();
 }
 

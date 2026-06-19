@@ -4,6 +4,7 @@
 #include "CricketBatterBrain.h"
 #include "CricketBowlerBrain.h"
 #include "CricketAIPlayerProfile.h"
+#include "CricketBalanceConfig.h"        // FCricketBalanceConfig
 #include "CricketOutcomeInterpreter.h"   // FCricketBallResult
 
 /**
@@ -27,12 +28,18 @@
 class CRICKETAI_API FCricketContestModel
 {
 public:
-	/** Resolve one delivery into raw physical facts for the interpreter. */
+	/**
+	 * Resolve one delivery into raw physical facts for the interpreter. The optional
+	 * balance config scales the physical factors (movement threat, timing scatter,
+	 * boundary/wicket odds); a default-constructed (neutral) config reproduces the
+	 * shipped behaviour exactly.
+	 */
 	static FCricketBallResult Resolve(
 		const FCricketBowlerDecision& Bowl,
 		const FCricketBatterDecision& Bat,
 		const FCricketAIPlayerProfile& Bowler,
 		const FCricketAIPlayerProfile& Batter,
 		const FCricketDeliveryRead& Ball,
-		FRandomStream& Rng);
+		FRandomStream& Rng,
+		const FCricketBalanceConfig& Balance = FCricketBalanceConfig());
 };

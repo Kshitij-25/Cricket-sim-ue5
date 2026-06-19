@@ -62,6 +62,7 @@ private:
 	FCricketBallResult GenerateResult();
 	void PollInput();
 	void DrawHUD() const;
+	void ReportResultIfComplete();
 
 	UPROPERTY() TObjectPtr<UCricketMatchEngine> Engine;
 
@@ -72,4 +73,5 @@ private:
 	float BallTimer = 0.f;
 	int32 DeliveryCounter = 0;  // advances the deterministic generator
 	int32 BowlerRotation = 0;
+	bool bResultReported = false; // ensures the match result is logged to diagnostics once
 };

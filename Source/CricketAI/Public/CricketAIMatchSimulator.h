@@ -6,6 +6,7 @@
 #include "CricketMatchTypes.h"       // FCricketMatchRules, ECricketDismissal
 #include "CricketBatterBrain.h"      // ECricketBatterAction
 #include "CricketBowlingTypes.h"     // ECricketLength
+#include "CricketBalanceConfig.h"    // FCricketBalanceConfig
 #include "CricketAIMatchSimulator.generated.h"
 
 class UCricketMatchEngine;
@@ -61,7 +62,23 @@ struct CRICKETAI_API FCricketAIInningsTelemetry
 	/** Counts indexed by ECricketDismissal (NotOut..Stumped). */
 	UPROPERTY(BlueprintReadOnly, Category = "AI|Sim") TArray<int32> Dismissals;
 
+	// --- Phase splits (for powerplay / death AI validation) ---
+	UPROPERTY(BlueprintReadOnly, Category = "AI|Sim") int32 PowerplayRuns = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "AI|Sim") int32 PowerplayWickets = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "AI|Sim") int32 PowerplayBalls = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "AI|Sim") int32 MiddleRuns = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "AI|Sim") int32 MiddleWickets = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "AI|Sim") int32 MiddleBalls = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "AI|Sim") int32 DeathRuns = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "AI|Sim") int32 DeathWickets = 0;
+	UPROPERTY(BlueprintReadOnly, Category = "AI|Sim") int32 DeathBalls = 0;
+
 	double RunRate() const { return LegalBalls > 0 ? (6.0 * Runs / LegalBalls) : 0.0; }
+	double PowerplayRunRate() const { return PowerplayBalls > 0 ? (6.0 * PowerplayRuns / PowerplayBalls) : 0.0; }
+	double DeathRunRate() const { return DeathBalls > 0 ? (6.0 * DeathRuns / DeathBalls) : 0.0; }
+	/** Boundary balls as a fraction of legal balls (fours + sixes). */
+	double BoundaryFraction() const { return LegalBalls > 0 ? (double)(Fours + Sixes) / LegalBalls : 0.0; }
+	double DotFraction() const { return LegalBalls > 0 ? (double)Dots / LegalBalls : 0.0; }
 };
 
 /** The full record of a simulated match. */
@@ -74,6 +91,11 @@ struct CRICKETAI_API FCricketAIMatchTelemetry
 	UPROPERTY(BlueprintReadOnly, Category = "AI|Sim") FString ResultSummary;
 	UPROPERTY(BlueprintReadOnly, Category = "AI|Sim") int32 TotalBalls = 0;
 	UPROPERTY(BlueprintReadOnly, Category = "AI|Sim") bool bCompleted = false;
+
+	/** True if the side batting SECOND won (a successful chase). False on a defended total or tie. */
+	UPROPERTY(BlueprintReadOnly, Category = "AI|Sim") bool bChaseSucceeded = false;
+	/** True if the match was tied. */
+	UPROPERTY(BlueprintReadOnly, Category = "AI|Sim") bool bTie = false;
 };
 
 /**
@@ -91,11 +113,16 @@ struct CRICKETAI_API FCricketAIMatchTelemetry
 class CRICKETAI_API FCricketAIMatchSimulator
 {
 public:
-	/** Play a full match between two AI teams; returns the telemetry. */
+	/**
+	 * Play a full match between two AI teams; returns the telemetry. The optional
+	 * balance config re-tunes the contest (swing/spin/bounce/timing/aggression/risk);
+	 * a neutral config reproduces the shipped behaviour exactly.
+	 */
 	static FCricketAIMatchTelemetry Simulate(
 		const FCricketAITeam& TeamA,
 		const FCricketAITeam& TeamB,
 		const FCricketMatchRules& Rules,
 		int32 Seed,
-		bool bTeamABatsFirst = true);
+		bool bTeamABatsFirst = true,
+		const FCricketBalanceConfig& Balance = FCricketBalanceConfig());
 };

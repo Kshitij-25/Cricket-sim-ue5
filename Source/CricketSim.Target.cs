@@ -14,11 +14,21 @@ public class CricketSimTarget : TargetRules
 		// C++20 across the project. Determinism-friendly defaults for physics.
 		CppStandard = CppStandardVersion.Cpp20;
 
+		// All runtime modules linked into the packaged game. These top-of-graph
+		// modules (UI/Audio/AI/Performance/Presentation) are not dependencies of
+		// CricketSim, so they must be named explicitly to be cooked into a Game/
+		// Shipping build — the editor only picks them up via the .uproject.
 		ExtraModuleNames.AddRange(new string[]
 		{
+			"CricketPerfCore",
 			"CricketPhysics",
 			"CricketGameplay",
-			"CricketSim"
+			"CricketSim",
+			"CricketAI",
+			"CricketUI",
+			"CricketAudio",
+			"CricketPerformance",
+			"CricketPresentation"
 		});
 	}
 }
