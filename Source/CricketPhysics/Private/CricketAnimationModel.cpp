@@ -51,26 +51,29 @@ FCricketLocomotionSample FCricketAnimationModel::ClassifyLocomotion(
 FCricketActionMontage FCricketAnimationModel::MakeBowlingMontage(const FCricketBowlingActionTimeline& T)
 {
 	FCricketActionMontage M;
-	// Phases: run-up -> delivery stride -> (release is an instant within stride) ->
-	// follow-through -> recover. The "Release" state is a brief window around the
-	// release instant for the AnimBP to play the release pose.
+	// Phases: run-up -> gather (back-foot plant/load) -> delivery stride ->
+	// (release is an instant within stride) -> follow-through -> recover. The
+	// "Release" state is a brief window around the release instant for the AnimBP
+	// to play the release pose.
 	const double ReleaseWindow = FMath::Min(0.08, T.DeliveryStrideTimeSec * 0.3);
 	const double StridePre = FMath::Max(T.ReleaseInStrideSec - ReleaseWindow * 0.5, 0.0);
 	const double StridePost = FMath::Max(T.DeliveryStrideTimeSec - StridePre - ReleaseWindow, 0.0);
 
 	M.Phases.Add(Phase((int32)ECricketBowlingAnimState::RunUp, T.RunUpTimeSec));
+	M.Phases.Add(Phase((int32)ECricketBowlingAnimState::Gather, T.GatherTimeSec));
 	M.Phases.Add(Phase((int32)ECricketBowlingAnimState::DeliveryStride, StridePre));
 	M.Phases.Add(Phase((int32)ECricketBowlingAnimState::Release, ReleaseWindow));
 	M.Phases.Add(Phase((int32)ECricketBowlingAnimState::FollowThrough, StridePost + T.FollowThroughTimeSec));
 	M.Phases.Add(Phase((int32)ECricketBowlingAnimState::Recover, 0.3));
 
-	// Footfalls during the run-up, then the all-important release.
+	// Footfalls during the run-up, then the back-foot gather plant, then the
+	// all-important release.
 	const int32 Strides = 3;
 	for (int32 i = 1; i <= Strides; ++i)
 	{
 		M.Notifies.Add(Notify(ECricketAnimNotify::FootPlant, T.RunUpTimeSec * i / (Strides + 1)));
 	}
-	M.Notifies.Add(Notify(ECricketAnimNotify::FootPlant, T.RunUpTimeSec)); // back-foot landing
+	M.Notifies.Add(Notify(ECricketAnimNotify::FootPlant, T.RunUpTimeSec)); // back-foot landing (gather begins)
 	M.Notifies.Add(Notify(ECricketAnimNotify::BallRelease, T.ReleaseTimeSec()));
 	return M;
 }
@@ -127,4 +130,20 @@ FCricketActionMontage FCricketAnimationModel::MakeBattingMontage(double Backlift
 	// Impact is at the end of the downswing — the contact instant.
 	M.Notifies.Add(Notify(ECricketAnimNotify::BatImpact, BackliftTimeSec + DownswingTimeSec));
 	return M;
+}
+
+bool FCricketAnimationModel::IsPhysicsHandoffNotify(ECricketAnimNotify Type)
+{
+	switch (Type)
+	{
+	case ECricketAnimNotify::BallRelease:
+	case ECricketAnimNotify::BatImpact:
+	case ECricketAnimNotify::CatchAttempt:
+	case ECricketAnimNotify::PickupContact:
+	case ECricketAnimNotify::ThrowRelease:
+		return true;
+	case ECricketAnimNotify::FootPlant:
+	default:
+		return false;
+	}
 }

@@ -40,6 +40,7 @@ private:
 	void DrawStateLabel() const;
 	void DrawReadout() const;
 	void DrawBatPath() const;
+	void DrawFieldingReadout() const;
 
 	UPROPERTY()
 	TObjectPtr<UCricketCharacterAnimComponent> Anim;

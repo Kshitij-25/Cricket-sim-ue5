@@ -11,6 +11,9 @@ public class CricketSimEditorTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V6;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
 		CppStandard = CppStandardVersion.Cpp20;
+		// Pinned to V6 (project targets UE 5.7); allow building against a newer
+		// installed engine (e.g. 5.8) without inheriting its stricter shared defaults.
+		bOverrideBuildEnvironment = true;
 
 		ExtraModuleNames.AddRange(new string[]
 		{

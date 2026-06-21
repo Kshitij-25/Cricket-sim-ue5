@@ -43,4 +43,12 @@ public:
 	static ECricketBattingAnimState MapBattingPhase(ECricketSwingPhase Phase);
 	/** A swing montage; BatImpact fires at ContactTimeSec (= the downswing duration). */
 	static FCricketActionMontage MakeBattingMontage(double BackliftTimeSec, double DownswingTimeSec, double FollowThroughTimeSec);
+
+	/**
+	 * True for notifies that hand off to (or gate) a physics event — BallRelease,
+	 * BatImpact, CatchAttempt, PickupContact, ThrowRelease. False for purely
+	 * cosmetic notifies (FootPlant). Debug tooling uses this to highlight the
+	 * moments that actually drive the simulation, vs. ones that are just dressing.
+	 */
+	static bool IsPhysicsHandoffNotify(ECricketAnimNotify Type);
 };

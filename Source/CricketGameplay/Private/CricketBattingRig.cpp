@@ -3,6 +3,8 @@
 #include "CricketBattingDebugComponent.h"
 #include "CricketBowlingComponent.h"
 #include "CricketBowlingActionAsset.h"
+#include "CricketCharacterAnimComponent.h"
+#include "CricketAnimDebugComponent.h"
 #include "CricketBall.h"
 #include "CricketPhysicsConstants.h"
 #include "Camera/CameraComponent.h"
@@ -42,6 +44,11 @@ ACricketBattingRig::ACricketBattingRig()
 
 	Batting = CreateDefaultSubobject<UCricketBattingComponent>(TEXT("Batting"));
 	BattingDebug = CreateDefaultSubobject<UCricketBattingDebugComponent>(TEXT("BattingDebug"));
+
+	// Follows the batting sim: derives the Backlift/Downswing/Impact/FollowThrough
+	// anim state, and fires BatImpact exactly when the swing meets the ball.
+	Anim = CreateDefaultSubobject<UCricketCharacterAnimComponent>(TEXT("Anim"));
+	AnimDebug = CreateDefaultSubobject<UCricketAnimDebugComponent>(TEXT("AnimDebug"));
 
 	BallClass = ACricketBall::StaticClass();
 }

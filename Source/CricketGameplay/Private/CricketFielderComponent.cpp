@@ -282,8 +282,15 @@ void UCricketFielderComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 		break;
 
 	case ECricketFielderState::Throwing:
-		ExecuteThrow();
-		SetState(ECricketFielderState::ReturningToPosition);
+		// Windup: the ball stays in hand while the arm winds up. ExecuteThrow (the
+		// ThrowRelease physics handoff) fires only once the windup elapses, not the
+		// instant the state is entered — Throwing is a real timed phase, not a snap.
+		HoldBallAtHand();
+		if (StateTime >= ThrowWindupSec)
+		{
+			ExecuteThrow();
+			SetState(ECricketFielderState::ReturningToPosition);
+		}
 		break;
 
 	case ECricketFielderState::ReturningToPosition:

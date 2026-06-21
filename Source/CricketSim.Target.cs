@@ -14,6 +14,10 @@ public class CricketSimTarget : TargetRules
 		// C++20 across the project. Determinism-friendly defaults for physics.
 		CppStandard = CppStandardVersion.Cpp20;
 
+		// Pinned to V6 (project targets UE 5.7); allow building against a newer
+		// installed engine (e.g. 5.8) without inheriting its stricter shared defaults.
+		bOverrideBuildEnvironment = true;
+
 		// All runtime modules linked into the packaged game. These top-of-graph
 		// modules (UI/Audio/AI/Performance/Presentation) are not dependencies of
 		// CricketSim, so they must be named explicitly to be cooked into a Game/

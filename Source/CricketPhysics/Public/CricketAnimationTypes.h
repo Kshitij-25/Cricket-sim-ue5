@@ -40,6 +40,7 @@ enum class ECricketBowlingAnimState : uint8
 {
 	Idle           UMETA(DisplayName = "Idle"),
 	RunUp          UMETA(DisplayName = "Run-Up"),
+	Gather         UMETA(DisplayName = "Gather"),
 	DeliveryStride UMETA(DisplayName = "Delivery Stride"),
 	Release        UMETA(DisplayName = "Release"),
 	FollowThrough  UMETA(DisplayName = "Follow Through"),
@@ -243,6 +244,8 @@ struct CRICKETPHYSICS_API FCricketBowlingActionTimeline
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bowling") double RunUpTimeSec = 1.6;
+	/** The back-foot gather/plant after the run-up — weight loads before the jump into the delivery stride. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bowling") double GatherTimeSec = 0.12;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bowling") double DeliveryStrideTimeSec = 0.45;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bowling") double FollowThroughTimeSec = 0.8;
 	/** Time into the delivery stride at which the ball leaves the hand (s). */
@@ -254,6 +257,6 @@ struct CRICKETPHYSICS_API FCricketBowlingActionTimeline
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Bowling") FVector WristAxis = FVector(0.0, 1.0, 0.0);
 
 	/** Absolute time from action start at which the ball is released. */
-	double ReleaseTimeSec() const { return RunUpTimeSec + ReleaseInStrideSec; }
-	double TotalDurationSec() const { return RunUpTimeSec + DeliveryStrideTimeSec + FollowThroughTimeSec; }
+	double ReleaseTimeSec() const { return RunUpTimeSec + GatherTimeSec + ReleaseInStrideSec; }
+	double TotalDurationSec() const { return RunUpTimeSec + GatherTimeSec + DeliveryStrideTimeSec + FollowThroughTimeSec; }
 };

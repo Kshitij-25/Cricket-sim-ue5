@@ -61,13 +61,49 @@
 			"Enabled": true
 		},
 		{
+			"Name": "EnhancedInput",
+			"Enabled": true
+		},
+		{
+			"Name": "PythonScriptPlugin",
+			"Enabled": true,
+			"TargetAllowList": [
+				"Editor"
+			]
+		},
+		{
+			"Name": "EditorScriptingUtilities",
+			"Enabled": true,
+			"TargetAllowList": [
+				"Editor"
+			]
+		},
+		{
 			"Name": "ChaosVehiclesPlugin",
 			"Enabled": false
 		},
 		{
 			"Name": "ModelingToolsEditorMode",
 			"Enabled": true,
-			"TargetAllowList": [ "Editor" ]
+			"TargetAllowList": [
+				"Editor"
+			]
+		},
+		{
+			"Name": "ModelContextProtocol",
+			"Enabled": true
+		},
+		{
+			"Name": "PoseSearch",
+			"Enabled": true
+		},
+		{
+			"Name": "Terminal",
+			"Enabled": true
+		},
+		{
+			"Name": "EditorToolset",
+			"Enabled": true
 		}
 	]
 }

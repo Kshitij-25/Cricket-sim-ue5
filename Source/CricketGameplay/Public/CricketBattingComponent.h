@@ -97,6 +97,27 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Cricket|Batting")
 	bool IsSwinging() const { return bSwingActive; }
 
+	// --- Contact window (animation-timing readout for debug/tooling) --------
+
+	/**
+	 * The swing-clock window within which the moving bat can geometrically meet
+	 * the ball and register a contact — centred on the profile's ideal contact
+	 * instant (DownswingTimeSec), ± the swing model's loose timing window. This is
+	 * the same window FCricketSwingModel::ClassifyTiming uses to grade Early/Late
+	 * vs Too Early/Too Late; exposed here so debug tooling can show it as a real,
+	 * inspectable "is the contact window open right now" state rather than an
+	 * implicit consequence of the geometry.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Cricket|Batting")
+	double GetContactWindowOpenSec() const;
+
+	UFUNCTION(BlueprintPure, Category = "Cricket|Batting")
+	double GetContactWindowCloseSec() const;
+
+	/** True while the swing clock is inside the contact window right now. */
+	UFUNCTION(BlueprintPure, Category = "Cricket|Batting")
+	bool IsContactWindowOpen() const;
+
 	// --- Read-back for debug / tooling --------------------------------------
 
 	const FCricketBattingInput& GetInput() const { return CurrentInput; }

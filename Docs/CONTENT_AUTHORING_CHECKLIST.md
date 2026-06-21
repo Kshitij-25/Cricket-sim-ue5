@@ -43,6 +43,27 @@ Steps 5+ (data assets, visible ball, second level) raise quality but are **not**
 required for the cook to succeed. The time budget below front-loads the critical
 path, then spends the rest on completeness.
 
+> **⛔ Hard precondition (the actual B1 blocker).** `package_mac.sh` runs with
+> `set -euo pipefail` and **no `-map` override**, so the cook set is `MapsToCook`
+> + `GameDefaultMap` = `/Game/Maps/L_Nets`. UE treats a `MapsToCook`/`GameDefaultMap`
+> entry with **no on-disk `.umap`** as a *hard cook failure* (non-zero RunUAT exit →
+> no `.app`). Today `Content/Maps/` has **zero `.umap` files**. So the cook **cannot
+> succeed** until step 1 produces `Content/Maps/L_Nets.umap`. Before packaging, gate on:
+> ```sh
+> find Content -iname 'L_Nets.umap'   # must return a hit, or the cook will fail
+> ```
+
+> **Why you can trust "no assets":** this premise was verified against the code, not
+> assumed. A grep of all of `Source/` found **zero** `ConstructorHelpers`,
+> `LoadObject`/`StaticLoadObject`/`LoadClass`, `FSoftObjectPath`/`TSoftObjectPtr`,
+> `/Game/` or `/Engine/` path literals, and `SetStaticMesh`/`SetMaterial`/`SetSkeletalMesh`
+> — i.e. the code references **no content asset by path anywhere**, so the cook cannot
+> fail on a missing reference. An adversarial boot-path audit (all 38
+> `CreateDefaultSubobject` calls + the L_Nets/L_Match `BeginPlay`/`Tick` paths + the
+> full deterministic T20 loop) found **no `check()`/`ensure()` that fires in Shipping
+> and no unguarded deref** — the packaged build boots and runs on empty content
+> without crashing. The single content dependency is the one level above.
+
 ---
 
 ## 1. Time budget (target: < 4 hours)
@@ -53,11 +74,11 @@ path, then spends the rest on completeness.
 | **B. First cook** | §9 Run pre-package gate + first `package_mac.sh`; confirm artifact | ✅ | 30 min |
 | **C. Scan hygiene** | §7 `/Game/Data/Balls` ×1, `/Game/Data/Teams` ×2 (kills AssetManager warnings) | ⭐ | 45 min |
 | **D. Visible polish** | §6 `BP_CricketBall` w/ sphere mesh; ball/bat/pitch variety assets | ◻ | 45 min |
-| **E. Second level** | §4 `L_Match` (auto-playing `CricketMatchRunner` demo) | ◻ | 20 min |
+| **E. Second level** | §4 `L_Match` (`CricketMatchRunner` — the **only** level with a live scoreboard) | ⭐ | 20 min |
 | **F. Re-cook + QA** | §9 Re-package, run `QA_CHECKLIST.md` §7 manual-play items | ✅ | 30 min |
 | | | **Total** | **~3h35m** |
 
-✅ required · ⭐ strongly recommended (removes cook warnings) · ◻ optional polish.
+✅ required · ⭐ strongly recommended · ◻ optional polish.
 If time is tight, **A + B + F alone (≈1h45m) yields a shippable slice.**
 
 ---
@@ -127,16 +148,39 @@ anywhere else (or misnaming it) leaves B1 unresolved and the cook fails.
 > **Do not** also place a `CricketMatchRunner` or a second batting pawn here — every
 > Cricket pawn sets `AutoPossessPlayer = Player0`, so two would fight over the player.
 
-### `L_Match` — auto-playing T20 demo (OPTIONAL)
+### `L_Match` — auto-playing T20 demo (RECOMMENDED — see HUD note below)
+
+> Bumped from "optional" to **recommended**: this is the **only** level whose HUD shows
+> a live **scoreboard**. The UMG `CricketHUDDataSource` finds the match engine *only* via
+> a placed `ACricketMatchRunner` (`CricketHUDDataSource.cpp:59-65`), so the scoreboard is
+> empty in a pawn-only `L_Nets`. If your demo needs a visible score, build this level.
 
 - [ ] New Empty Level → **Save As** `/Game/Maps/L_Match`.
 - [ ] Add the same lighting set.
 - [ ] **Place one `CricketMatchRunner`** (only this actor — it's fully self-contained,
       runs India vs Australia ball-by-ball, `OversPerInnings=20`, `Seed=12345`).
 - [ ] Add `+MapsToCook=(FilePath="/Game/Maps/L_Match")` to `DefaultGame.ini`.
-- [ ] *(Note)* The runner's on-screen debug scoreboard is **compiled out of Shipping**;
+- [ ] *(Note)* The runner's own on-screen debug scoreboard is **compiled out of Shipping**;
       in a Shipping package the player-facing `CricketUI` HUD shows the score instead
-      (it auto-resolves the runner as its data source).
+      (it auto-resolves the runner as its data source). `bAutoPlay=true` drives the match
+      to completion even with no possessed controller.
+
+### What the HUD shows per map (important — verified, not a bug)
+
+`CricketHUDDataSource::ResolveSources` discovers panels from whatever is in the world:
+
+| Panel | Source it looks for | `L_Nets` (PlayerPawn) | `L_Match` (MatchRunner) |
+|---|---|---|---|
+| Scoreboard | `ACricketMatchRunner`→`GetEngine()` (only) | ❌ empty (no runner) | ✅ populated |
+| Batting | `UCricketBattingComponent` (any actor) | ✅ (on the pawn) | — |
+| Bowling | `UCricketBowlingComponent` (any actor) | ✅ (the pawn's feeder) | — |
+| Ball physics | `UCricketBallPhysicsComponent` | ✅ (the ball) | — |
+| Replay | `UCricketReplayComponent` | ✅ when replaying | — |
+
+→ In `L_Nets` the player sees batting/bowling/physics panels but **no scoreline** — that
+is correct for a nets session, not a defect. **Do not** place a `MatchRunner` *and* a
+batting pawn in the same level to "fix" it: both set `AutoPossessPlayer = Player0` and
+would fight over possession. Use `L_Match` for the scoreboard.
 
 ---
 
@@ -241,6 +285,20 @@ tuning content. Create via **Content Browser ▸ Add ▸ Miscellaneous ▸ Data 
 
 ## 9. Packaging validation checklist
 
+### Build-environment prerequisites (not content — but "zero assets" ≠ "zero prerequisites")
+
+- [ ] **Apple-Silicon Mac + UE 5.7** at `UE_ROOT` (default `/Users/Shared/Epic Games/UE_5.7`).
+- [ ] Toolchain can compile **`SF_METAL_SM6`** shaders (`DefaultEngine.ini` pins the Mac
+      target to Metal SM6). An unsupported toolchain surfaces as a *shader-compile* cook
+      failure, not a missing-asset error — don't misread it as a content gap.
+- [ ] *(Awareness, non-fatal)* Per-match analytics (`Saved/Analytics/Matches.csv`) is
+      **best-effort** — `FFileHelper::SaveStringToFile`'s result is checked and only logged;
+      in a sandboxed/read-only packaged install the write may silently no-op. It never crashes.
+- [ ] *(Guardrail)* HUD widgets derive from `UCommonUserWidget` (not `UCommonActivatableWidget`),
+      so **no** CommonUI Input Data / Style asset is required and none is set — correct as-is.
+      If a future widget switches to an *activatable* base, a CommonUI Input Data asset
+      becomes mandatory.
+
 ### Pre-package gate (run first — `QA_CHECKLIST.md` §0)
 
 - [ ] `Scripts/run_tests.sh` → **122/122**, exit 0.
@@ -249,8 +307,11 @@ tuning content. Create via **Content Browser ▸ Add ▸ Miscellaneous ▸ Data 
 
 ### In-editor pre-flight
 
-- [ ] PIE in `L_Nets`: HUD scoreboard appears; ball is auto-fed (visible if §6 done);
+- [ ] `find Content -iname 'L_Nets.umap'` returns a hit (the hard precondition — see §0).
+- [ ] PIE in `L_Nets`: batting/bowling/physics HUD panels appear (**no scoreboard** — by
+      design, no match engine; see §4 HUD note); ball is auto-fed (visible if §6 done);
       input responds (D/W footwork, Space plays the shot — see Appendix).
+- [ ] *(If built)* PIE in `L_Match`: the **scoreboard populates** and the T20 plays out.
 - [ ] No load errors / missing-asset warnings in the Output Log.
 - [ ] `/Game/Maps/L_Nets` is saved and listed under Packaging ▸ Maps to include.
 
@@ -261,8 +322,10 @@ tuning content. Create via **Content Browser ▸ Add ▸ Miscellaneous ▸ Data 
 - [ ] **Success =** RunUAT exits 0; `BUILD SUCCESSFUL`; artifact under `Build/Mac/`.
 - [ ] Inspect the cook log (results land in `~/Library/Logs/...`, **not** stdout): `L_Nets`
       cooked; **no** "Could not find object for asset" / missing-reference **errors**.
-- [ ] Launch the packaged app → it loads into `L_Nets`, the HUD shows, and a match plays
-      to completion. Confirm `Saved/Analytics/Matches.csv` gets a row (telemetry — `QA_CHECKLIST.md` §7).
+- [ ] Launch the packaged app → it loads into `L_Nets`; the batting/bowling/physics HUD
+      panels show and deliveries are auto-fed. *(No scoreboard / no `Matches.csv` row here —
+      those come from a `MatchRunner`; verify them in `L_Match` if built. The analytics CSV
+      is best-effort and may no-op in a sandboxed install — non-fatal.)*
 
 ### Common cook failures (empty-content start)
 

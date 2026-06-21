@@ -83,6 +83,21 @@ void UCricketBattingComponent::Defend()
 	TriggerSwing();
 }
 
+double UCricketBattingComponent::GetContactWindowOpenSec() const
+{
+	return FMath::Max(ActiveProfile.DownswingTimeSec - FCricketSwingModel::LooseWindowSec, 0.0);
+}
+
+double UCricketBattingComponent::GetContactWindowCloseSec() const
+{
+	return ActiveProfile.DownswingTimeSec + FCricketSwingModel::LooseWindowSec;
+}
+
+bool UCricketBattingComponent::IsContactWindowOpen() const
+{
+	return bSwingActive && SwingClock >= GetContactWindowOpenSec() && SwingClock <= GetContactWindowCloseSec();
+}
+
 void UCricketBattingComponent::EndSwing()
 {
 	bSwingActive = false;

@@ -1,6 +1,8 @@
 #include "CricketAnimDebugComponent.h"
 #include "CricketCharacterAnimComponent.h"
 #include "CricketBattingComponent.h"
+#include "CricketFielderComponent.h"
+#include "CricketAnimationModel.h"
 #include "CricketPhysicsConstants.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/Engine.h"
@@ -53,6 +55,7 @@ void UCricketAnimDebugComponent::TickComponent(float DeltaTime, ELevelTick TickT
 	DrawStateLabel();
 	DrawReadout();
 	DrawBatPath();
+	DrawFieldingReadout();
 }
 
 void UCricketAnimDebugComponent::DrawStateLabel() const
@@ -101,18 +104,57 @@ void UCricketAnimDebugComponent::DrawReadout() const
 	{
 		const FString BatStr = StaticEnum<ECricketBattingAnimState>()->GetDisplayNameTextByValue((int64)Anim->GetBattingState()).ToString();
 		Line(2, FColor::Green, FString::Printf(TEXT("Batting: %s  bat speed %.1f m/s"), *BatStr, Anim->GetBatSpeedMS()));
+
+		// The contact window: when the swing CAN register a hit, made an explicit,
+		// inspectable construct rather than an implicit consequence of geometry.
+		if (const UCricketBattingComponent* B = Anim->GetBatting())
+		{
+			const bool bOpen = B->IsContactWindowOpen();
+			Line(5, bOpen ? FColor::Yellow : FColor(120, 120, 120),
+				FString::Printf(TEXT("Contact window: %s  [%.3f .. %.3f]s  clock=%.3fs"),
+					bOpen ? TEXT("OPEN") : TEXT("closed"),
+					B->GetContactWindowOpenSec(), B->GetContactWindowCloseSec(), B->GetSwingClockSec()));
+		}
 	}
 
 	// Notify timing: the recent notifies and when they fired; the newest flashes.
+	// Physics-handoff notifies (BallRelease/BatImpact/CatchAttempt/PickupContact/
+	// ThrowRelease) are starred so they read as distinct from cosmetic ones
+	// (FootPlant) at a glance.
 	const TArray<FCricketAnimNotifyLog>& Logs = Anim->GetRecentNotifies();
 	const float Now = GetWorld()->GetTimeSeconds();
 	FString NotifyLine = TEXT("Notifies: ");
+	bool bLastWasHandoff = false;
 	for (int32 i = FMath::Max(0, Logs.Num() - 5); i < Logs.Num(); ++i)
 	{
-		NotifyLine += FString::Printf(TEXT("[%s @%.2f] "), NotifyName(Logs[i].Type), Logs[i].WorldTime);
+		const bool bHandoff = FCricketAnimationModel::IsPhysicsHandoffNotify(Logs[i].Type);
+		NotifyLine += FString::Printf(TEXT("[%s%s @%.2f] "), bHandoff ? TEXT("*") : TEXT(""), NotifyName(Logs[i].Type), Logs[i].WorldTime);
+		if (i == Logs.Num() - 1) { bLastWasHandoff = bHandoff; }
 	}
 	const bool bFlash = Logs.Num() > 0 && (Now - Logs.Last().WorldTime) < 0.3f;
-	Line(3, bFlash ? FColor::Yellow : FColor(150, 150, 150), NotifyLine);
+	const FColor NotifyColor = bFlash ? (bLastWasHandoff ? FColor::Yellow : FColor::Cyan) : FColor(150, 150, 150);
+	Line(3, NotifyColor, NotifyLine);
+}
+
+void UCricketAnimDebugComponent::DrawFieldingReadout() const
+{
+	const UCricketFielderComponent* F = Anim->GetFielder();
+	if (!F || !GEngine) { return; }
+	if (Anim->GetFieldingState() == ECricketFieldingAnimState::Idle) { return; }
+
+	auto Line = [&](int32 K, const FColor& C, const FString& T) { GEngine->AddOnScreenDebugMessage(MessageKeyBase + K, 0.f, C, T); };
+
+	const FString FieldStr = StaticEnum<ECricketFieldingAnimState>()->GetDisplayNameTextByValue((int64)Anim->GetFieldingState()).ToString();
+	Line(4, FColor::Magenta, FString::Printf(TEXT("Fielding: %s  state-time %.2fs  holding=%s"),
+		*FieldStr, F->GetStateTimeSec(), F->HasBall() ? TEXT("yes") : TEXT("no")));
+
+	// The throw windup: an explicit window between entering Throwing and the
+	// ThrowRelease handoff (ball actually leaving the hand), mirroring the
+	// run-up -> release pattern bowling already has.
+	if (F->GetState() == ECricketFielderState::Throwing)
+	{
+		Line(6, FColor::Orange, FString::Printf(TEXT("Throw windup: %.2fs / %.2fs"), F->GetStateTimeSec(), F->ThrowWindupSec));
+	}
 }
 
 void UCricketAnimDebugComponent::DrawBatPath() const

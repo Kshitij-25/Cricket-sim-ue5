@@ -10,7 +10,7 @@ vertical slice — not to add gameplay systems.
 
 | # | Deliverable | Status | Where |
 |---|---|---|---|
-| 1 | Release Candidate build | ⚠️ Code-complete; **content-blocked** | `KNOWN_ISSUES.md` B1 |
+| 1 | Release Candidate build | ✅ Code-complete + content authored + packaged | `KNOWN_ISSUES.md` (B1 resolved), `VERTICAL_SLICE_VALIDATION_REPORT.md` |
 | 2 | QA checklist | ✅ | `QA_CHECKLIST.md` |
 | 3 | Packaging pipeline | ✅ | `Scripts/`, `RELEASE_BUILD.md` |
 | 4 | Stability report | ✅ | `STABILITY_REPORT.md` |
@@ -30,12 +30,14 @@ vertical slice — not to add gameplay systems.
 - **Telemetry in place**: crash breadcrumb hooks, structured error logging, and
   per-match analytics CSV via `UCricketDiagnosticsSubsystem`.
 
-## The one open blocker
+## Content authoring — resolved 2026-06-20
 
-A *runnable packaged* slice needs at least one authored level — `Content/` is
-currently empty and the configured startup map (`/Game/Maps/L_Nets`) does not
-exist. This is **content authoring, not code**; everything verifiable in code is
-green. See `KNOWN_ISSUES.md` **B1** for the ~half-day unblock path.
+`/Game/Maps/L_Nets` and `/Game/Maps/L_Match` now exist (created via
+`Scripts/setup_content.sh`, a repeatable Python editor-scripting pass), and
+`Scripts/package_mac.sh Shipping` succeeds end-to-end on macOS — see
+`Docs/VERTICAL_SLICE_VALIDATION_REPORT.md` for the full verification record,
+including what still needs manual visual/interactive confirmation on real
+hardware (no display was available in the environment this pass ran in).
 
 ## What changed this pass (code)
 

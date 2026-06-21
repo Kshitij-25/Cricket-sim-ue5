@@ -7,6 +7,8 @@
 class UCricketBattingComponent;
 class UCricketBattingDebugComponent;
 class UCricketBowlingComponent;
+class UCricketCharacterAnimComponent;
+class UCricketAnimDebugComponent;
 class UCameraComponent;
 class UBoxComponent;
 class ACricketBall;
@@ -87,6 +89,13 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cricket|Rig")
 	TObjectPtr<UCricketBattingDebugComponent> BattingDebug;
+
+	/** Follows the batting sim to derive anim state and fire the BatImpact notify exactly on contact. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cricket|Rig")
+	TObjectPtr<UCricketCharacterAnimComponent> Anim;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cricket|Rig")
+	TObjectPtr<UCricketAnimDebugComponent> AnimDebug;
 
 private:
 	void PollInput(float DeltaSeconds);

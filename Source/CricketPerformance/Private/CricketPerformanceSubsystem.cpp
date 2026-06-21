@@ -10,7 +10,8 @@
 #include "HAL/PlatformMemory.h"
 #include "HAL/PlatformTime.h"
 #include "RenderingThread.h"         // GGameThreadTime, GRenderThreadTime
-#include "RHI.h"                     // GGPUFrameTime
+#include "RHI.h"                     // RHIGetGPUFrameCycles
+#include "DynamicRHI.h"              // RHIGetGPUFrameCycles
 
 DEFINE_LOG_CATEGORY_STATIC(LogCricketPerf, Log, All);
 
@@ -134,7 +135,7 @@ void UCricketPerformanceSubsystem::SampleWholeFrame(float DeltaTime)
 	Timings[static_cast<int32>(ECricketPerfCategory::RenderThread)].Push(
 		FPlatformTime::ToMilliseconds(GRenderThreadTime));
 	Timings[static_cast<int32>(ECricketPerfCategory::GPU)].Push(
-		FPlatformTime::ToMilliseconds(GGPUFrameTime));
+		FPlatformTime::ToMilliseconds(RHIGetGPUFrameCycles()));
 }
 
 void UCricketPerformanceSubsystem::SampleScopes()

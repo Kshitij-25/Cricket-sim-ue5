@@ -129,7 +129,58 @@ bool FCricketAnimFieldingTest::RunTest(const FString&)
 	return true;
 }
 
-// 5. STATE TRANSITIONS: the bowling action moves through its states in order, and
+// 5. GATHER PHASE: the back-foot gather/plant sits between the run-up and the
+//    delivery stride, and lengthens the schedule release fires at by exactly
+//    GatherTimeSec — proving the new phase is wired into the timeline, not just
+//    declared.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCricketAnimGatherTest,
+	"CricketSim.Anim.BowlingGatherPhase", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FCricketAnimGatherTest::RunTest(const FString&)
+{
+	FCricketBowlingActionTimeline T; // defaults (GatherTimeSec = 0.12)
+	const FCricketActionMontage M = FCricketAnimationModel::MakeBowlingMontage(T);
+
+	TestEqual(TEXT("Gather follows the run-up"),
+		(ECricketBowlingAnimState)M.StateAtTime(T.RunUpTimeSec + T.GatherTimeSec * 0.5), ECricketBowlingAnimState::Gather);
+	TestEqual(TEXT("Delivery stride follows the gather"),
+		(ECricketBowlingAnimState)M.StateAtTime(T.RunUpTimeSec + T.GatherTimeSec + 0.01), ECricketBowlingAnimState::DeliveryStride);
+
+	// Release time must include the gather: RunUp + Gather + ReleaseInStride.
+	TestTrue(TEXT("Release time accounts for the gather"),
+		FMath::IsNearlyEqual(T.ReleaseTimeSec(), T.RunUpTimeSec + T.GatherTimeSec + T.ReleaseInStrideSec, 1e-9));
+
+	// Lengthening the gather pushes release back by exactly the same amount —
+	// the timeline, not a hardcoded offset, owns the schedule.
+	FCricketBowlingActionTimeline Longer = T;
+	Longer.GatherTimeSec += 0.05;
+	TestTrue(TEXT("Longer gather delays release by exactly its delta"),
+		FMath::IsNearlyEqual(Longer.ReleaseTimeSec() - T.ReleaseTimeSec(), 0.05, 1e-9));
+
+	const double Dt = 0.005;
+	const TArray<FFired> F = PlayOut(M, Dt);
+	const double FireT = TimeOf(F, ECricketAnimNotify::BallRelease);
+	TestTrue(TEXT("Release still fires exactly on schedule with the gather present"),
+		FireT >= T.ReleaseTimeSec() - 1e-9 && FireT <= T.ReleaseTimeSec() + Dt + 1e-9);
+	return true;
+}
+
+// 6. PHYSICS-HANDOFF CLASSIFICATION: the notifies that gate/observe a physics
+//    event are distinguished from purely cosmetic ones, for debug tooling.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCricketAnimHandoffClassificationTest,
+	"CricketSim.Anim.PhysicsHandoffClassification", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FCricketAnimHandoffClassificationTest::RunTest(const FString&)
+{
+	using M = FCricketAnimationModel;
+	TestTrue(TEXT("BallRelease is a handoff"), M::IsPhysicsHandoffNotify(ECricketAnimNotify::BallRelease));
+	TestTrue(TEXT("BatImpact is a handoff"), M::IsPhysicsHandoffNotify(ECricketAnimNotify::BatImpact));
+	TestTrue(TEXT("CatchAttempt is a handoff"), M::IsPhysicsHandoffNotify(ECricketAnimNotify::CatchAttempt));
+	TestTrue(TEXT("PickupContact is a handoff"), M::IsPhysicsHandoffNotify(ECricketAnimNotify::PickupContact));
+	TestTrue(TEXT("ThrowRelease is a handoff"), M::IsPhysicsHandoffNotify(ECricketAnimNotify::ThrowRelease));
+	TestFalse(TEXT("FootPlant is cosmetic, not a handoff"), M::IsPhysicsHandoffNotify(ECricketAnimNotify::FootPlant));
+	return true;
+}
+
+// 7. STATE TRANSITIONS: the bowling action moves through its states in order, and
 //    the player advances through them deterministically.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCricketAnimTransitionTest,
 	"CricketSim.Anim.StateTransitions", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
@@ -140,24 +191,26 @@ bool FCricketAnimTransitionTest::RunTest(const FString&)
 
 	// Ordered states by time.
 	TestEqual(TEXT("Starts in run-up"), (ECricketBowlingAnimState)M.StateAtTime(0.0), ECricketBowlingAnimState::RunUp);
-	TestEqual(TEXT("Then delivery stride"), (ECricketBowlingAnimState)M.StateAtTime(T.RunUpTimeSec + 0.01), ECricketBowlingAnimState::DeliveryStride);
+	TestEqual(TEXT("Then gather"), (ECricketBowlingAnimState)M.StateAtTime(T.RunUpTimeSec + 0.01), ECricketBowlingAnimState::Gather);
+	TestEqual(TEXT("Then delivery stride"), (ECricketBowlingAnimState)M.StateAtTime(T.RunUpTimeSec + T.GatherTimeSec + 0.01), ECricketBowlingAnimState::DeliveryStride);
 	TestEqual(TEXT("Follows through after release"), (ECricketBowlingAnimState)M.StateAtTime(T.ReleaseTimeSec() + 0.1), ECricketBowlingAnimState::FollowThrough);
 	TestEqual(TEXT("Ends in recover"), (ECricketBowlingAnimState)M.StateAtTime(T.TotalDurationSec() + 0.5), ECricketBowlingAnimState::Recover);
 
-	// The player visits run-up, stride and follow-through as it advances.
+	// The player visits run-up, gather, stride and follow-through as it advances.
 	FCricketMontagePlayer P; P.Start(M);
-	bool bSawRunUp = false, bSawStride = false, bSawFollow = false;
+	bool bSawRunUp = false, bSawGather = false, bSawStride = false, bSawFollow = false;
 	int32 Guard = 0;
 	while (P.bPlaying && Guard++ < 200000)
 	{
 		TArray<ECricketAnimNotify> Fired;
 		const ECricketBowlingAnimState St = (ECricketBowlingAnimState)P.CurrentStateId();
 		bSawRunUp |= (St == ECricketBowlingAnimState::RunUp);
+		bSawGather |= (St == ECricketBowlingAnimState::Gather);
 		bSawStride |= (St == ECricketBowlingAnimState::DeliveryStride);
 		bSawFollow |= (St == ECricketBowlingAnimState::FollowThrough);
 		P.Advance(0.01, Fired);
 	}
-	TestTrue(TEXT("Visited run-up, stride and follow-through"), bSawRunUp && bSawStride && bSawFollow);
+	TestTrue(TEXT("Visited run-up, gather, stride and follow-through"), bSawRunUp && bSawGather && bSawStride && bSawFollow);
 	TestFalse(TEXT("Playback finished"), P.bPlaying);
 	return true;
 }

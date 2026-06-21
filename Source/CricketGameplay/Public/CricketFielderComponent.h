@@ -92,6 +92,8 @@ public:
 	// --- Read-back for debug / coordination ---------------------------------
 
 	ECricketFielderState GetState() const { return State; }
+	/** Seconds spent in the current state (e.g. how far into the throw windup). */
+	double GetStateTimeSec() const { return StateTime; }
 	bool IsActiveChaser() const { return bIsActiveChaser; }
 	const FCricketBallPrediction& GetPrediction() const { return Prediction; }
 	const FCricketInterceptResult& GetIntercept() const { return Intercept; }
@@ -121,6 +123,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cricket|Fielding") double GatherTimeSec = 0.3;
 	/** Time (s) to complete a catch (secured) before throwing. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cricket|Fielding") double CatchHoldSec = 0.35;
+	/** Throw windup (s): the ball stays in hand while the arm winds up; ExecuteThrow (the ThrowRelease handoff) fires when this elapses, not the instant the Throwing state is entered. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cricket|Fielding") double ThrowWindupSec = 0.15;
 	/** Release speed (m/s) of a throw. A hard flat throw for a run-out. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cricket|Fielding") double ThrowSpeedMS = 28.0;
 	/** Running speed (m/s) when returning to position. */
